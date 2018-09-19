@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"io/ioutil"
 	"log"
 	"fmt"
 	"strings"
 	"os"
+	"path/filepath"
+	"regexp"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/ledongthuc/pdf"
 )
 
 var cna, lmm string
@@ -35,24 +39,37 @@ func main () {
 		log.Fatal(err)
 	}
 
-
 	// Read from xlsx
 	for _, fi := range files {
-		readFile(fi.Name())
+		if filepath.Ext(fi.Name()) == ".xlsx" {
+			readFileXLSX(fi.Name())
+		}
+		if filepath.Ext(fi.Name()) == ".pdf" {
+			cna, err = readFilePDF(fi.Name())
+			if err != nil {
+				panic(err)
+			}
+			cna = cna[75:len(cna)-9]
+			reg := regexp.MustCompile("[\\d] [\\D]{3} [\\d]{5}.[\\d]")
+			cna = reg.ReplaceAllString(cna, ", ")
+			cna = strings.Replace(cna, "; ", ", ", -1)
+		}
 	}
 
 	// Write to a file CNA
-	foc, err := os.Create("./files/outputCNA.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer foc.Close()
+	if len(cna) > 0 {
+		foc, err := os.Create("./files/outputCNA.txt")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer foc.Close()
 
-	_, err = foc.WriteString(cna)
-	if err != nil {
-		log.Fatal(err)
+		_, err = foc.WriteString(cna)
+		if err != nil {
+			log.Fatal(err)
+		}
+		foc.Sync()
 	}
-	foc.Sync()
 
 	if len(lmm) > 0 {
 		// Write to a file LMM
@@ -70,7 +87,7 @@ func main () {
 	}
 }
 
-func readFile(s string) {
+func readFileXLSX(s string) {
 	xlsx, err := excelize.OpenFile("./files/" + s)
 	if err != nil {
 		log.Fatal(err)
@@ -132,4 +149,20 @@ func readFile(s string) {
 		lmm = lmm + "\n"
 	}
 	fmt.Print()
+}
+
+func readFilePDF(s string) (string, error) {
+	f, r, err := pdf.Open("./files/" + s)
+	// remember close file
+    defer f.Close()
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+    b, err := r.GetPlainText()
+    if err != nil {
+        return "", err
+    }
+    buf.ReadFrom(b)
+	return buf.String(), nil
 }
