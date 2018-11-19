@@ -102,7 +102,7 @@ func readFileXLSX(s string) {
 
 	// Detect column with lots of string
 	max, maxCol := 0, 0
-	rows := xlsx.GetRows("Sheet1")
+	rows := xlsx.GetRows(xlsx.GetSheetName(1))
 		for _, row := range rows {
 			for i := 0; i < len(row); i++ {
 				if len(row[i]) > max {
@@ -114,10 +114,11 @@ func readFileXLSX(s string) {
 	mode := "CNA"
 
 	// Get all the rows in the Sheet1
-	rows = xlsx.GetRows("Sheet1")
-	for _, row := range rows {
+	rows = xlsx.GetRows(xlsx.GetSheetName(1))
+	for i, row := range rows {
+		if i == 0 { continue }
 		// Index out of range protection
-		if len(row) > maxCol {
+		if len(row) > maxCol+1 {
 			if (strings.Trim(row[maxCol + 1], " ") == "CNA" || strings.Trim(row[maxCol + 1], " ") == "CAN") && len(row[maxCol]) > 5 {
 				mode = "CNA"
 			}
