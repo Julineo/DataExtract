@@ -39,7 +39,7 @@ func main () {
 		log.Fatal(err)
 	}
 
-	// Read from xlsx
+	// Read from xlsx or pdf
 	for _, fi := range files {
 		if filepath.Ext(fi.Name()) == ".xlsx" {
 			readFileXLSX(fi.Name())
@@ -49,10 +49,17 @@ func main () {
 			if err != nil {
 				panic(err)
 			}
-			cna = cna[75:len(cna)-9]
-			reg := regexp.MustCompile("[\\d] [\\D]{3} [\\d]{5}.[\\d]")
-			cna = reg.ReplaceAllString(cna, ", ")
-			cna = strings.Replace(cna, "; ", ", ", -1)
+			cna = cna[102:len(cna)-13]
+			reg := regexp.MustCompile("(Mon|Tue|Wed|Thur|Thr|Fri|Sat|Sun)[0-9]{1,2} [a-zA-Z]{3} [0-9]{4,6}")
+			cna = reg.ReplaceAllString(cna, "")
+			cna = strings.Replace(cna, ";,", ",", -1)
+			cna = strings.Replace(cna, ";", ",", -1)
+			cna = strings.Replace(cna, ".", ",", -1)
+			cna = strings.Replace(cna, ",,", ",", -1)
+			cna = strings.Replace(cna, "  ", " ", -1)
+			cna = strings.Replace(cna, ", ", ",", -1)
+			cna = strings.Replace(cna, ",", ", ", -1)
+
 		}
 	}
 
@@ -154,15 +161,15 @@ func readFileXLSX(s string) {
 func readFilePDF(s string) (string, error) {
 	f, r, err := pdf.Open("./files/" + s)
 	// remember close file
-    defer f.Close()
+	defer f.Close()
 	if err != nil {
 		return "", err
 	}
 	var buf bytes.Buffer
-    b, err := r.GetPlainText()
-    if err != nil {
-        return "", err
-    }
-    buf.ReadFrom(b)
+	b, err := r.GetPlainText()
+	if err != nil {
+		return "", err
+	}
+	buf.ReadFrom(b)
 	return buf.String(), nil
 }
